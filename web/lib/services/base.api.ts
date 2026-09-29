@@ -1,15 +1,38 @@
-const baseUrl =
-  process.env.NODE_ENV === 'production'
-    ? ''
-    : 'http://localhost:4000';
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000'
 
-export interface ApiResponse {
-  success: boolean;
-  message: string;
-  data?: any;
+export interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data?: T
+  status?: number
 }
 
-export const baseAPI = async (url: string, method: any, body?: unknown) => {
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+interface ErrorPayload {
+  message?: unknown
+}
+
+function getErrorMessage(payload: unknown, status: number): string {
+  if (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'message' in payload
+  ) {
+    const message = (payload as ErrorPayload).message
+    if (typeof message === 'string') {
+      return message
+    }
+  }
+
+  return `Request failed with status ${status}`
+}
+
+export const baseAPI = async <T>(
+  url: string,
+  method: HttpMethod,
+  body?: unknown,
+): Promise<ApiResponse<T>> => {
   try {
     const res = await fetch(`${baseUrl}/user${url}`, {
       method,
@@ -28,22 +51,26 @@ export const baseAPI = async (url: string, method: any, body?: unknown) => {
       throw new Error('Invalid JSON response from server');
     }
 
-    const responseData = data as Partial<ApiResponse> | null;
-
     if (!res.ok) {
-      throw new Error(responseData?.message || `Request failed with status ${res.status}`);
+      return {
+        success: false,
+        message: getErrorMessage(data, res.status),
+        status: res.status,
+      }
     }
+
     return {
       success: true,
-      message: responseData?.message ?? 'Request successful',
-      data: responseData?.data ?? responseData,
-    };
+      message: 'Request successful',
+      data: data as T,
+      status: res.status,
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Something went wrong';
 
     return {
       success: false,
       message,
-    };
+    }
   }
-};
+}

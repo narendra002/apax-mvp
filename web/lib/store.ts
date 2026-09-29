@@ -2,6 +2,8 @@
 
 import { create } from 'zustand'
 
+export const AUTH_TOKEN_STORAGE_KEY = 'apax.auth.token'
+
 // Types
 export interface MetalPrice {
   gold: number
@@ -42,6 +44,11 @@ export interface AuditLog {
 }
 
 interface APAXStore {
+  // Authentication
+  authToken: string | null
+  setAuthToken: (token: string) => void
+  clearAuthToken: () => void
+
   // Metal Prices (Mock data with live simulation)
   metalPrices: MetalPrice
   setMetalPrices: (prices: MetalPrice) => void
@@ -130,6 +137,20 @@ const initialAuditLogs: AuditLog[] = [
 ]
 
 export const useAPAXStore = create<APAXStore>((set, get) => ({
+  // Authentication
+  authToken:
+    typeof window === 'undefined'
+      ? null
+      : window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY),
+  setAuthToken: (token) => {
+    window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token)
+    set({ authToken: token })
+  },
+  clearAuthToken: () => {
+    window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY)
+    set({ authToken: null })
+  },
+
   // Metal Prices
   metalPrices: initialMetalPrices,
   setMetalPrices: (prices) => set({ metalPrices: prices }),

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { loginApi } from '@/lib/services/login.api';
+import { useAPAXStore } from '@/lib/store'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,26 +21,37 @@ export default function LoginPage() {
   const [vaultOpening, setVaultOpening] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const setAuthToken = useAPAXStore((state) => state.setAuthToken)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // setIsLoading(true)
-    const res = await loginApi({ email, password })
-    console.log(res)
-    //NEED TO CLEAN UP ONCE ALL DONE, didn't get time due to mongodb connection issue.
-    // Simulate authentication delay
-    // await new Promise(resolve => setTimeout(resolve, 1000))
+    if (isLoading) {
+      return
+    }
 
-    // Trigger vault door animation
-    // setVaultOpening(true)
+    setIsLoading(true)
+    setLoginError(null)
 
-    // Navigate after animation
-    // await new Promise(resolve => setTimeout(resolve, 1000))
-    // router.push('/dashboard')
-    if(res.data) {
-      router.push('/dashbaord')
-    } else {
-      alert('Something went wrong')
+    try {
+      const response = await loginApi({ email, password })
+      const token = response.data?.token
+
+      if (response.success && typeof token === 'string' && token.length > 0) {
+        setAuthToken(token)
+        router.push('/dashboard')
+        return
+      }
+
+      setLoginError(
+        response.status === 401
+          ? 'The email or password you entered is incorrect.'
+          : 'We could not sign you in right now. Please try again.',
+      )
+    } catch {
+      setLoginError('We could not sign you in right now. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -218,6 +230,7 @@ export default function LoginPage() {
                       placeholder="client@apax.institutional"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
                       className="pl-10 bg-[#1A1A1A] border-[#2A2A2A] text-[#E8E8E8] placeholder:text-[#888888] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20"
                       required
                     />
@@ -234,18 +247,26 @@ export default function LoginPage() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
                       className="pl-10 pr-10 bg-[#1A1A1A] border-[#2A2A2A] text-[#E8E8E8] placeholder:text-[#888888] focus:border-[#D4AF37] focus:ring-[#D4AF37]/20"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-[#C0C0C0]"
                     >
                       {showPassword ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
+
+                {loginError && (
+                  <p role="alert" className="text-sm text-red-400">
+                    {loginError}
+                  </p>
+                )}
 
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center gap-2 text-[#888888]">
