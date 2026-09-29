@@ -22,7 +22,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [isAuthReady, setIsAuthReady] = useState(false)
+  const authToken = useAPAXStore((state) => state.authToken)
   const setAuthToken = useAPAXStore((state) => state.setAuthToken)
+
+  React.useEffect(() => {
+    setIsAuthReady(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (authToken) {
+      router.replace('/dashboard')
+    }
+  }, [authToken, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,6 +79,10 @@ export default function LoginPage() {
     // Navigate after animation
     await new Promise(resolve => setTimeout(resolve, 1000))
     router.push('/dashboard')
+  }
+
+  if (!isAuthReady || authToken) {
+    return null
   }
 
   return (

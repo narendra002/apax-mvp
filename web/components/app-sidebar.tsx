@@ -11,6 +11,7 @@ import {
   SignOut
 } from '@phosphor-icons/react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 import {
   Sidebar,
@@ -67,7 +68,13 @@ const supportItems = [
 ]
 
 export function AppSidebar() {
-  const { activeView, setActiveView } = useAPAXStore()
+  const router = useRouter()
+  const { activeView, setActiveView, clearAuthToken } = useAPAXStore()
+
+  const handleLogout = () => {
+    clearAuthToken()
+    router.replace('/login')
+  }
 
   return (
     <Sidebar className="border-r border-[#2A2A2A] bg-[#0D0D0D]">
@@ -155,7 +162,12 @@ export function AppSidebar() {
               <p className="text-sm font-medium text-[#E8E8E8] truncate">John Doe</p>
               <p className="text-xs text-[#888888] truncate">client@apax.institutional</p>
             </div>
-            <button className="p-1.5 rounded-md hover:bg-[#1A1A1A] text-[#888888] hover:text-[#E8E8E8] transition-colors">
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sign out"
+              className="p-1.5 rounded-md hover:bg-[#1A1A1A] text-[#888888] hover:text-[#E8E8E8] transition-colors"
+            >
               <SignOut className="h-4 w-4" />
             </button>
           </div>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { DashboardView } from '@/components/views/dashboard-view'
 import { PorView } from '@/components/views/por-view'
@@ -10,10 +11,27 @@ import { ShariaView } from '@/components/views/sharia-view'
 import { useAPAXStore } from '@/lib/store'
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const [isAuthReady, setIsAuthReady] = useState(false)
+  const authToken = useAPAXStore((state) => state.authToken)
   const { activeView, addAuditLog } = useAPAXStore()
+
+  useEffect(() => {
+    setIsAuthReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!authToken) {
+      router.replace('/login')
+    }
+  }, [authToken, router])
 
   // Simulate live price updates
   useEffect(() => {
+    if (!authToken) {
+      return
+    }
+
     const interval = setInterval(() => {
       useAPAXStore.setState((state) => ({
         metalPrices: {
@@ -26,10 +44,14 @@ export default function DashboardPage() {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [authToken])
 
   // Simulate occasional audit log events
   useEffect(() => {
+    if (!authToken) {
+      return
+    }
+
     const events = [
       'Vault Verification',
       'Token Mint',
@@ -50,7 +72,7 @@ export default function DashboardPage() {
     }, 30000) // Every 30 seconds
 
     return () => clearInterval(interval)
-  }, [addAuditLog])
+  }, [addAuditLog, authToken])
 
   const renderView = () => {
     switch (activeView) {
@@ -67,6 +89,10 @@ export default function DashboardPage() {
       default:
         return <DashboardView />
     }
+  }
+
+  if (!isAuthReady || !authToken) {
+    return null
   }
 
   return (
